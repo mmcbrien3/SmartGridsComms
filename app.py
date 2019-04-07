@@ -11,8 +11,10 @@ class MotorData(Resource):
         return motor_data
 
     def post(self):
-        motor_data[get_max_id(commands)+1] = request.form['data']
-        return {id: motor_data[id]}
+        i = get_max_id(motor_data)+1
+        nd = {'ts': request.form['ts'], 'current': request.form['current'], 'voltage': request.form['voltage']}
+        motor_data.update({i: nd})
+        return {i: motor_data[i]}
 
 commands = {}
 
@@ -33,6 +35,7 @@ def get_max_id(dict):
 
 
 api.add_resource(Command, '/Commands')
+api.add_resource(MotorData, '/MotorData')
 
 if __name__ == '__main__':
     app.run(debug=True)
