@@ -16,6 +16,7 @@ class ClientApplication(object):
 
         if not self.check_site_up():
             print("Site not running!")
+            return
         self.root = tkinter.Tk()
         label_power = tkinter.Label(self.root, text="Power Consumption")
         label_power.grid(row=0, column=2)
@@ -52,7 +53,7 @@ class ClientApplication(object):
 
     def check_site_up(self):
         try:
-            r = requests.head("http://127.0.0.1:5000/Commands")
+            r = requests.head("http://192.168.43.225:5000/Commands")
             return r.status_code == 200
         except:
             return False
@@ -72,7 +73,7 @@ class ClientApplication(object):
         self.send_command("increase")
 
     def send_command(self, d):
-        URL = "http://127.0.0.1:5000/Commands"
+        URL = "http://192.168.43.225:5000/Commands"
         command = Commands()
         command.set_command(d)
         r = requests.post(URL, command.get_postable())
@@ -87,7 +88,7 @@ class ClientApplication(object):
         self.update_power_plot()
 
     def get_motor_data(self):
-        URL = "http://127.0.0.1:5000/MotorData"
+        URL = "http://192.168.43.225:5000/MotorData"
         r = requests.get(url=URL)
         print(r.json())
         all_motor_data = None
