@@ -7,7 +7,11 @@ while True:
     r = requests.get(url=URL)
     print(r.json())
     if len(r.json()) > 0:
-        all_motor_data = r.json().items()
+        all_motor_data = r.json()
+        p = []
+        if all_motor_data:
+            for k, v in all_motor_data.items():
+                p.append(float(v['current'])*float(v['voltage']))
         print(all_motor_data)
-
+        print(p)
     time.sleep(5)

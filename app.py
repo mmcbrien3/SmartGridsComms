@@ -38,4 +38,4 @@ api.add_resource(Command, '/Commands')
 api.add_resource(MotorData, '/MotorData')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=False)

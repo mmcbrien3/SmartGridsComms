@@ -5,7 +5,7 @@ URL = "http://127.0.0.1:5000/MotorData"
 
 d = 'inCreaSe'
 command = MotorDatum()
-command.set_current(5)
+command.set_current(2)
 command.set_voltage(10)
 r = requests.post(URL, command.get_postable())
 pastebin_url = r.text
