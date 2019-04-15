@@ -1,6 +1,7 @@
 from time import sleep
 from ina219 import INA219
-
+from MotorDataDao import MotorDatum
+import requests
 ina = INA219(shunt_ohms=0.1,max_expected_amps=1,address=0x40)
 
 ina.configure(voltage_range=ina.RANGE_16V,
@@ -15,13 +16,14 @@ try:
 		i = ina.voltage()/1000.0
 		#POST NEW DATA
 		if v and i:
-			URL = "http://127.0.0.1:5000/MotorData"
+			URL = "http://192.168.43.225:5000/MotorData"
 			command = MotorDatum()
 			command.set_current(i)
 			command.set_voltage(v)
 			r = requests.post(URL, command.get_postable())
-			print("Successfully posted data of v: %v and i: %i" %(v, i))
+			print("Successfully posted data of v: %f and i: %f" %(v, i))
 
 		sleep(delay)
-except:
+except Exception as e:
 	print("Something went wrong reading from the ina219")
+	print(e)
