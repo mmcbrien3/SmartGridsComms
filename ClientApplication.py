@@ -10,6 +10,7 @@ from CommandsDao import Commands
 from MotorDataDao import MotorDatum
 import numpy as np
 
+
 class ClientApplication(object):
     Price30 =[2.0, 2.0, 1.9, 1.7, 1.9, 1.7, 1.7, 2.2, 2.2, 2.5, 2.3, 2.4, 2.1, 2.3, 2.3, 2.2, 2.1, 2.1, 2.2, 4.6, 2.5, 2.3, 2.0, 2.0]
     Price31 = [1.9, 1.9, 1.9, 2.2, 2.0, 1.9, 2.0, 2.3, 3.4, 2.3, 0.4, 1.8, 2.5, 2.5, 2.3, 2.3, 2.3, 2.5, 2.7, 3.3, 5.8, 4.5, 3.1, 2.9]
@@ -32,6 +33,8 @@ class ClientApplication(object):
     Load6 = []
     Load7 = []
     Load8 = []
+
+    root_url = "http://192.168.43.225:5000"
     
     def __init__(self):
 
@@ -68,9 +71,8 @@ class ClientApplication(object):
         self.root.mainloop()
 
     def check_site_up(self):
-        return True
         try:
-            r = requests.head("http://192.168.43.225:5000/Commands")
+            r = requests.head(self.root_url + "/Commands")
             return r.status_code == 200
         except:
             return False
@@ -90,7 +92,7 @@ class ClientApplication(object):
         self.send_command("increase")
 
     def send_command(self, d):
-        URL = "http://192.168.43.225:5000/Commands"
+        URL = self.root_url + "/Commands"
         command = Commands()
         command.set_command(d)
         r = requests.post(URL, command.get_postable())
@@ -105,8 +107,7 @@ class ClientApplication(object):
         self.update_power_plot()
 
     def get_motor_data(self):
-        return [[1], [0]]
-        URL = "http://192.168.43.225:5000/MotorData"
+        URL = self.root_url + "/MotorData"
         r = requests.get(url=URL)
         print(r.json())
         all_motor_data = None
