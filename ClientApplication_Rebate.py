@@ -9,6 +9,7 @@ import tkinter.messagebox
 from CommandsDao import Commands
 from MotorDataDao import MotorDatum
 import numpy as np
+import time
 
 max_power = 0.512514012
 
@@ -43,16 +44,21 @@ class ClientApplication(object):
             print("Site not running!")
             return
         self.root = tkinter.Tk()
+        self.follow_rebate = tkinter.messagebox.askquestion("", "Do you want to follow the rebate curve?")
+        if self.follow_rebate.lower() == "yes":
+            self.follow_rebate = True
+        else:
+            self.follow_rebate = False
         self.root.geometry("1200x750")
         label_power = tkinter.Label(self.root, text="Power Consumption")
         label_power.grid(row=0, column=2)
 
         label_cost = tkinter.Label(self.root, text="Power Cost")
         label_cost.grid(row=0, column=7)
-
+        self.update_cost_plots()
+        self.cur_pwm = 0
         self.update_power_plot()
 
-        self.update_cost_plots()
 
         label_button = tkinter.Label(self.root, text="Change Power")
         label_button.grid(row=2, column=0)
@@ -64,9 +70,12 @@ class ClientApplication(object):
         button_decrease.grid(row=2, column=1)
 
         self.timer_text = "Time to next refresh: "
-        self.remaining = 5
+        self.remaining = 1
+        self.rebate_update = 1
         self.label_timer = tkinter.Label(self.root, text = self.timer_text + str(self.remaining))
         self.label_timer.grid(row=2, column = 3)
+        self.cur_hour = 0
+        self.total_seconds = 0
         self.countdown()
 
         self.root.mainloop()
@@ -82,12 +91,17 @@ class ClientApplication(object):
         if self.remaining <= 0:
             self.label_timer.configure(text="Refreshing!")
             self.refresh()
-            self.remaining = 5
+            self.remaining = 1
             self.root.after(1000, self.countdown)
         else:
             self.label_timer.configure(text= self.timer_text + str(self.remaining))
             self.remaining = self.remaining - 1
             self.root.after(1000, self.countdown)
+        if self.total_seconds % 5 == 0:
+            self.cur_hour += 1
+        self.total_seconds += 1
+        print("total seconds: %d" % self.total_seconds)
+
 
     def increase_power(self):
         self.send_command("increase")
@@ -98,19 +112,36 @@ class ClientApplication(object):
         command.set_command(d)
         r = requests.post(URL, command.get_postable())
         pastebin_url = r.text
-        print("The pastebin URL is:%s" % pastebin_url)
-        tkinter.messagebox.showinfo(title="Command Success", message = "Command %s sent successfully" % (d))
+        if not self.follow_rebate:
+            tkinter.messagebox.showinfo(title="Command Success", message = "Command %s sent successfully" % (d))
 
     def decrease_power(self):
         self.send_command("decrease")
 
     def refresh(self):
+        if self.follow_rebate:
+            new_pwm = self.match_data[self.cur_hour]/max(self.match_data) * 100
+            print("cur_pwm %f" % self.cur_pwm)
+            print("new_pwm %f" % new_pwm)
+            num_updates = int(round((new_pwm - self.cur_pwm)/5))
+            print("num_updates: %f" % num_updates)
+            if num_updates > 0:
+                for i in range(num_updates):
+                    print("INCREASING")
+                    self.increase_power()
+                    time.sleep(0.05)
+                self.cur_pwm += num_updates * 5
+            elif num_updates < 0:
+                for i in range(abs(num_updates)):
+                    print("DECREASING")
+                    self.decrease_power()
+                    time.sleep(0.05)
+                self.cur_pwm += num_updates * 5
         self.update_power_plot()
 
     def get_motor_data(self):
         URL = self.root_url + "/MotorData"
         r = requests.get(url=URL)
-        print(r.json())
         all_motor_data = None
         if len(r.json()) > 0:
             all_motor_data = r.json()
@@ -118,14 +149,14 @@ class ClientApplication(object):
         if all_motor_data:
             for k, v in all_motor_data.items():
                 p.append(float(v['current'])*float(v['voltage']))
+        p = [i * float(self.speed_constant) for i in p]
         return [p, range(len(p))]
 
     def update_power_plot(self):
         f = Figure(figsize=(6, 3), dpi=100)
         a = f.add_subplot(111)
         md = self.get_motor_data()
-        print(md[0])
-        print(md[1])
+
         a.plot(md[1], md[0])
 
         self.power_canvas = FigureCanvasTkAgg(f, self.root)
