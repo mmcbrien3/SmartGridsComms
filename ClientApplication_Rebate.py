@@ -14,6 +14,7 @@ import time
 max_power = 0.512514012
 
 class ClientApplication(object):
+    granularity = 2
     Price30 =[2.0, 2.0, 1.9, 1.7, 1.9, 1.7, 1.7, 2.2, 2.2, 2.5, 2.3, 2.4, 2.1, 2.3, 2.3, 2.2, 2.1, 2.1, 2.2, 4.6, 2.5, 2.3, 2.0, 2.0]
     Price31 = [1.9, 1.9, 1.9, 2.2, 2.0, 1.9, 2.0, 2.3, 3.4, 2.3, 0.4, 1.8, 2.5, 2.5, 2.3, 2.3, 2.3, 2.5, 2.7, 3.3, 5.8, 4.5, 3.1, 2.9]
     Price1 = [2.9, 3.3, 2.7, 2.8, 2.5, 2.6, 5.0, 6.6, 2.7, 2.9, 3.0, 3.0, 2.9, 2.8, 2.5, 2.3, 2.2, 2.5, 2.6, 17.2, 11.4, 3.1, 2.6, 2.4]
@@ -39,7 +40,7 @@ class ClientApplication(object):
     root_url = "http://192.168.43.225:5000"
     
     def __init__(self):
-
+        self.first_load = True
         if not self.check_site_up():
             print("Site not running!")
             return
@@ -57,6 +58,8 @@ class ClientApplication(object):
         label_cost.grid(row=0, column=7)
         self.update_cost_plots()
         self.cur_pwm = 0
+        self.cur_hour = 0
+
         self.update_power_plot()
 
 
@@ -74,7 +77,6 @@ class ClientApplication(object):
         self.rebate_update = 1
         self.label_timer = tkinter.Label(self.root, text = self.timer_text + str(self.remaining))
         self.label_timer.grid(row=2, column = 3)
-        self.cur_hour = 0
         self.total_seconds = 0
         self.countdown()
 
@@ -123,20 +125,20 @@ class ClientApplication(object):
             new_pwm = self.match_data[self.cur_hour]/max(self.match_data) * 100
             print("cur_pwm %f" % self.cur_pwm)
             print("new_pwm %f" % new_pwm)
-            num_updates = int(round((new_pwm - self.cur_pwm)/5))
+            num_updates = int(round((new_pwm - self.cur_pwm)/self.granularity))
             print("num_updates: %f" % num_updates)
             if num_updates > 0:
                 for i in range(num_updates):
                     print("INCREASING")
                     self.increase_power()
                     time.sleep(0.05)
-                self.cur_pwm += num_updates * 5
+                self.cur_pwm += num_updates * self.granularity
             elif num_updates < 0:
                 for i in range(abs(num_updates)):
                     print("DECREASING")
                     self.decrease_power()
                     time.sleep(0.05)
-                self.cur_pwm += num_updates * 5
+                self.cur_pwm += num_updates * self.granularity
         self.update_power_plot()
 
     def get_motor_data(self):
@@ -150,15 +152,30 @@ class ClientApplication(object):
             for k, v in all_motor_data.items():
                 p.append(float(v['current'])*float(v['voltage']))
         p = [i * float(self.speed_constant) for i in p]
+        if self.follow_rebate and self.first_load:
+            self.first_load = False
+            self.ignore_length = len(p)
+            return [[], []]
+        elif self.follow_rebate and not self.first_load:
+            p = p[self.ignore_length:]
         return [p, range(len(p))]
 
     def update_power_plot(self):
+        delay = 0.5
+        hour_secs = 5
         f = Figure(figsize=(6, 3), dpi=100)
         a = f.add_subplot(111)
         md = self.get_motor_data()
 
-        a.plot(md[1], md[0])
 
+        a.plot(md[1], md[0])
+        if self.follow_rebate:
+            all_xticks = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23']
+            max_hour = self.cur_hour
+            a.set_xticks(np.arange(0, self.cur_hour*12, 12))
+            a.set_xticklabels(all_xticks[0:self.cur_hour+1])
+        if len(md[0]) > 120:
+            x = 2
         self.power_canvas = FigureCanvasTkAgg(f, self.root)
         self.power_canvas.draw()
         self.power_canvas.get_tk_widget().grid(row=1, column=0, columnspan=5)
@@ -224,6 +241,7 @@ class ClientApplication(object):
         self.match_data = NewDemand
         a.set_xlabel("Time (hours)")
         a.set_ylabel('Consumption in KWh')
+        a.set_yticks(range(0, 100, 10))
         a.legend(handles=[line1, line2], labels=["New Demand", "Initial Load"])
         f.tight_layout()
         self.power_canvas = FigureCanvasTkAgg(f, self.root)
