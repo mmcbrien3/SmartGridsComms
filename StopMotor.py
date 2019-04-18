@@ -1,7 +1,3 @@
-
-#!/usr/bin/env python
-
-# Import required modules
 import time
 import RPi.GPIO as GPIO
 
@@ -23,9 +19,6 @@ GPIO.output(7, 100) # Set PWMA
 
 # Disable STBY (standby)
 GPIO.output(13, GPIO.HIGH)
-
-# Wait 5 seconds
-time.sleep(10)
 
 # Reset all the GPIO pins by setting them to LOW
 GPIO.output(12, GPIO.LOW) # Set AIN1
