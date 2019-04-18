@@ -24,12 +24,12 @@ pwm = GPIO.PWM(7, 100)
 pwm.start(speed_level)
 # Disable STBY (standby)
 GPIO.output(13, GPIO.HIGH)
-
+granularity = 2
 def increase_speed_level(sl):
-    return min(sl + 5, 100)
+    return min(sl + granularity, 100)
 
 def decrease_speed_level(sl):
-    return max(sl - 5, 0)
+    return max(sl - granularity, 0)
 last_time_stamp = None
 while True:
     r = requests.get(url=URL)
