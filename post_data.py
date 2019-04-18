@@ -8,7 +8,7 @@ ina.configure(voltage_range=ina.RANGE_16V,
                 gain=ina.GAIN_AUTO,
                 bus_adc=ina.ADC_128SAMP,
                 shunt_adc=ina.ADC_128SAMP)
-delay = 3
+delay = .5
 try:
 	while True:
 		#READ IN VALUES
@@ -17,7 +17,7 @@ try:
 		i = ina.current()/1000.0
 		print(i)
 		#POST NEW DATA
-		if v and i:
+		if v is not None and i is not None:
 			URL = "http://192.168.43.225:5000/MotorData"
 			command = MotorDatum()
 			command.set_current(i)

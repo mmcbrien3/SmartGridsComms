@@ -19,23 +19,17 @@ GPIO.output(12, GPIO.HIGH) # Set AIN1
 GPIO.output(11, GPIO.LOW) # Set AIN2
 
 # Set the motor speed
-speed_level = 50
+speed_level = 0
 pwm = GPIO.PWM(7, 100)
 pwm.start(speed_level)
 # Disable STBY (standby)
 GPIO.output(13, GPIO.HIGH)
 
 def increase_speed_level(sl):
-    sl += 5
-    if sl > 100:
-        sl = 100
-    return sl
+    return min(sl + 5, 100)
 
 def decrease_speed_level(sl):
-    sl -=5
-    if sl < 0:
-        sl = 0
-    return sl
+    return max(sl - 5, 0)
 last_time_stamp = None
 while True:
     r = requests.get(url=URL)
@@ -46,10 +40,11 @@ while True:
         c.print()
         if c.get_command() == "increase" and not last_time_stamp == c.get_timestamp():
             speed_level = increase_speed_level(speed_level)
-            pwm.start(speed_level)
+            pwm.ChangeDutyCycle(speed_level)
             last_time_stamp = c.get_timestamp()
-        elif c.get_command() == "decrease":
+        elif c.get_command() == "decrease" and not last_time_stamp == c.get_timestamp():
             speed_level = decrease_speed_level(speed_level)
-            pwm.start(speed_level)
+            pwm.ChangeDutyCycle(speed_level)
             last_time_stamp = c.get_timestamp()
-    time.sleep(5)
+        print("New Speed Level is: %f" % speed_level)
+    time.sleep(0.01)
