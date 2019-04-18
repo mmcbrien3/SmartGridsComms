@@ -13,7 +13,9 @@ try:
 	while True:
 		#READ IN VALUES
 		v = ina.voltage()
-		i = ina.voltage()/1000.0
+		print(v)
+		i = ina.current()/1000.0
+		print(i)
 		#POST NEW DATA
 		if v and i:
 			URL = "http://192.168.43.225:5000/MotorData"
